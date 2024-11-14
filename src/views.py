@@ -2,16 +2,8 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from src.utils import (
-    currency,
-    greeting,
-    number_cards,
-    path_to_file,
-    read_file,
-    stock_prices,
-    to_file,
-    top_transactions,
-)
+from src.utils import (currency, greeting, number_cards, path_to_file, read_file, stock_prices, to_file,
+                       top_transactions)
 
 begin_date = datetime(2020, 5, 25, 15, 46, 57)
 str_begin_date = datetime.strftime(begin_date, "%Y-%m-%d %H:%M:%S")
