@@ -1,16 +1,16 @@
-# import http.client
+import http.client
 import json
 import logging
 
-# import os
+import os
 from datetime import datetime
 from pathlib import Path
 
 from pandas import Timestamp
 
-# import openpyxl
-# import requests
-# from dotenv import load_dotenv
+import openpyxl
+import requests
+from dotenv import load_dotenv
 
 path_to_project = Path(__file__).resolve().parent.parent
 path_to_file = path_to_project / "data" / "operations.xlsx"
@@ -26,7 +26,7 @@ logger.addHandler(fileHandler)
 def read_file(file):
     """Читаем DataFrame, возвращаем список словарей"""
     transactions = []
-    # headers = file.columns.tolist()
+    headers = file.columns.tolist()
     file["Номер карты"] = file["Номер карты"].fillna(False)
     try:
         logger.info("We have an adequate list of dictionaries")
@@ -144,29 +144,27 @@ def currency(info):
         access_key_curr = os.getenv("access_key_curr")
 
         headers_curr = {"apikey": access_key_curr}
-        url_usd = f"https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base=USD"
+        url_usd = f"""https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base=USD"""
 
         result_usd = requests.get(url_usd, headers=headers_curr)
         new_amount_usd = result_usd.json()
 
-        url_eur = f"https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base=EUR"
+        url_eur = f"""https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base=EUR"""
         result_eur = requests.get(url_eur, headers=headers_curr)
         new_amount_eur = result_eur.json()
 
         info["currency_rates"] = []
 
-            info['currency_rates'].append({
-          "currency": "USD",
-          "rate": new_amount_usd['rates']['RUB']
+        info['currency_rates'].append({
+            "currency": "USD",
+            "rate": new_amount_usd['rates']['RUB']
         })
 
-            info['currency_rates'].append({
-                "currency": "EUR",
-                "rate": new_amount_eur['rates']['RUB']
-            })
+        info['currency_rates'].append({
+            "currency": "EUR",
+            "rate": new_amount_eur['rates']['RUB']
+        })
 
-        info["currency_rates"].append({"currency": "USD", "rate": 95.676332})
-        info["currency_rates"].append({"currency": "EUR", "rate": 104.753149})
         return info
     except Exception as e:
         logger.error("Everybody has problems with currency now...")
@@ -177,20 +175,20 @@ def stock_prices(info):
     """Подключаемся к API, получаем наименование акции и ее цену, добавляем в словарь info"""
     try:
         logger.info("Good stocks")
-        # load_dotenv()
-        # access_key_stock = os.getenv("access_key_stock")
-        # conn = http.client.HTTPSConnection("real-time-finance-data.p.rapidapi.com")
-        #
-        # headers = {
-        #     "x-rapidapi-key": access_key_stock,
-        #     "x-rapidapi-host": "real-time-finance-data.p.rapidapi.com",
-        # }
-        #
-        # conn.request("GET", "/market-trends?trend_type=MARKET_INDEXES&country=us&language=en", headers=headers)
-        #
-        # res = conn.getresponse()
-        # data = res.read()
-        # data_json = json.loads(data.decode("utf-8"))
+        load_dotenv()
+        access_key_stock = os.getenv("access_key_stock")
+        conn = http.client.HTTPSConnection("real-time-finance-data.p.rapidapi.com")
+
+        headers = {
+            "x-rapidapi-key": access_key_stock,
+            "x-rapidapi-host": "real-time-finance-data.p.rapidapi.com",
+        }
+
+        conn.request("GET", "/market-trends?trend_type=MARKET_INDEXES&country=us&language=en", headers=headers)
+
+        res = conn.getresponse()
+        data = res.read()
+        data_json = json.loads(data.decode("utf-8"))
         data_json = {
             "data": {
                 "trends": [
