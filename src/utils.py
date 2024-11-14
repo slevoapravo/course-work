@@ -140,30 +140,30 @@ def currency(info):
     """Подключаемся к API, получаем курсы валют USD и EUR в отношении рубля, добавляем в словарь info"""
     try:
         logger.info("Where do you have so much currency from?")
-        # load_dotenv()
-        # access_key_curr = os.getenv("access_key_curr")
-        #
-        # headers_curr = {"apikey": access_key_curr}
-        # url_usd = f"https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base=USD"
-        #
-        # result_usd = requests.get(url_usd, headers=headers_curr)
-        # new_amount_usd = result_usd.json()
-        #
-        # url_eur = f"https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base=EUR"
-        # result_eur = requests.get(url_eur, headers=headers_curr)
-        # new_amount_eur = result_eur.json()
+        load_dotenv()
+        access_key_curr = os.getenv("access_key_curr")
+
+        headers_curr = {"apikey": access_key_curr}
+        url_usd = f"https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base=USD"
+
+        result_usd = requests.get(url_usd, headers=headers_curr)
+        new_amount_usd = result_usd.json()
+
+        url_eur = f"https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base=EUR"
+        result_eur = requests.get(url_eur, headers=headers_curr)
+        new_amount_eur = result_eur.json()
 
         info["currency_rates"] = []
 
-        #     info['currency_rates'].append({
-        #   "currency": "USD",
-        #   "rate": new_amount_usd['rates']['RUB']
-        # })
-        #
-        #     info['currency_rates'].append({
-        #         "currency": "EUR",
-        #         "rate": new_amount_eur['rates']['RUB']
-        #     })
+            info['currency_rates'].append({
+          "currency": "USD",
+          "rate": new_amount_usd['rates']['RUB']
+        })
+
+            info['currency_rates'].append({
+                "currency": "EUR",
+                "rate": new_amount_eur['rates']['RUB']
+            })
 
         info["currency_rates"].append({"currency": "USD", "rate": 95.676332})
         info["currency_rates"].append({"currency": "EUR", "rate": 104.753149})
