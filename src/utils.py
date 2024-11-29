@@ -1,4 +1,3 @@
-import http.client
 import json
 import logging
 
@@ -186,18 +185,6 @@ def stock_prices(info):
 
         conn.request("GET", "/market-trends?trend_type=MARKET_INDEXES&country=us&language=en", headers=headers)
 
-        res = conn.getresponse()
-        data = res.read()
-        data_json = json.loads(data.decode("utf-8"))
-        data_json = {
-            "data": {
-                "trends": [
-                    {"name": "S&P 500", "price": 4500.50},
-                    {"name": "Dow Jones", "price": 34000.75},
-                    {"name": "NASDAQ", "price": 15000.25},
-                ]
-            }
-        }
 
         info["stock_prices"] = []
 
