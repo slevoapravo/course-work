@@ -7,7 +7,6 @@ from pathlib import Path
 
 from pandas import Timestamp
 
-import openpyxl
 import requests
 from dotenv import load_dotenv
 
@@ -136,33 +135,30 @@ def top_transactions(trans, info):
 
 
 def currency(info):
-    """Подключаемся к API, получаем курсы валют USD и EUR в отношении рубля, добавляем в словарь info"""
+    """Подключаемся к API, получаем курсы валют, указанные в user_settings.json, добавляем в словарь info"""
     try:
         logger.info("Where do you have so much currency from?")
         load_dotenv()
         access_key_curr = os.getenv("access_key_curr")
 
         headers_curr = {"apikey": access_key_curr}
-        url_usd = f"""https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base=USD"""
 
-        result_usd = requests.get(url_usd, headers=headers_curr)
-        new_amount_usd = result_usd.json()
-
-        url_eur = f"""https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base=EUR"""
-        result_eur = requests.get(url_eur, headers=headers_curr)
-        new_amount_eur = result_eur.json()
+        # Загрузка валют из user_settings.json
+        with open('user_settings.json', 'r') as f:
+            settings = json.load(f)
+            currencies = settings.get("currencies", ["USD", "EUR"])  # По умолчанию USD и EUR
 
         info["currency_rates"] = []
 
-        info['currency_rates'].append({
-            "currency": "USD",
-            "rate": new_amount_usd['rates']['RUB']
-        })
+        for currency in currencies:
+            url = f"https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base={currency}"
+            result = requests.get(url, headers=headers_curr)
+            new_amount = result.json()
 
-        info['currency_rates'].append({
-            "currency": "EUR",
-            "rate": new_amount_eur['rates']['RUB']
-        })
+            info['currency_rates'].append({
+                "currency": currency,
+                "rate": new_amount['rates']['RUB']
+            })
 
         return info
     except Exception as e:
@@ -176,15 +172,15 @@ def stock_prices(info):
         logger.info("Good stocks")
         load_dotenv()
         access_key_stock = os.getenv("access_key_stock")
-        conn = http.client.HTTPSConnection("real-time-finance-data.p.rapidapi.com")
 
+        url = "https://real-time-finance-data.p.rapidapi.com/market-trends?trend_type=MARKET_INDEXES&country=us&language=en"
         headers = {
             "x-rapidapi-key": access_key_stock,
             "x-rapidapi-host": "real-time-finance-data.p.rapidapi.com",
         }
 
-        conn.request("GET", "/market-trends?trend_type=MARKET_INDEXES&country=us&language=en", headers=headers)
-
+        response = requests.get(url, headers=headers)
+        data_json = response.json()
 
         info["stock_prices"] = []
 
