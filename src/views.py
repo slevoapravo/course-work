@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -31,24 +32,21 @@ def filter_operations_by_date(df: pd.DataFrame, date: str):
     return df.loc[(df["Дата операции"] >= start_date) & (df["Дата операции"] < end_date)]
 
 
-def main(analysis_date):
-    """Получаем транзакции из Excel файла, фильтрованные по дате"""
-    object_date = datetime.strptime(analysis_date, "%Y-%m-%d %H:%M:%S")
-    new_analysis_date = datetime.strftime(object_date, "%d-%m-%Y %H:%M:%S")
-    df = get_operations()
-    df = filter_operations_by_date(df, new_analysis_date)
-    return df
+def main(date):
+    # Чтение файла с данными
+    data = read_file(date)  # Убедитесь, что read_file возвращает правильный объект
+
+    main_data = {
+        "greeting": greeting(),
+        "cards": number_cards(data, greeting()),
+        "top_transactions": top_transactions(data),
+        "currency_rates": currency(data),
+        "stock_prices": stock_prices(data)
+    }
+
+    return json.dumps(main_data, indent=4, ensure_ascii=False)
 
 
 if __name__ == "__main__":
-    print(
-        to_file(
-            stock_prices(
-                currency(
-                    top_transactions(
-                        read_file(main(str_begin_date)), number_cards(read_file(main(str_begin_date)), greeting())
-                    )
-                )
-            )
-        )
-    )
+    str_begin_date = "2023-01-01"
+    print(main(str_begin_date))
