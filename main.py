@@ -4,18 +4,7 @@ from src.utils import currency, greeting, number_cards, read_file, stock_prices,
 from src.views import main, str_begin_date
 
 if __name__ == "__main__":
-    print(
-        to_file(
-            stock_prices(
-                currency(
-                    top_transactions(
-                        read_file(main(str_begin_date)), number_cards(read_file(main(str_begin_date)), greeting())
-                    )
-                )
-            )
-        )
-    )
-
+    str_begin_date = "2025-01-01"
+    print(main(str_begin_date))
     print(investment_bank(str_date_service, transactions, 50))
-
     print(spending_by_weekday(df_file, str_date_report))
