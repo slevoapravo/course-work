@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timedelta
 
 import pandas as pd
+from pandas import DataFrame
 
 from src.utils import (currency, greeting, number_cards, path_to_file, read_file, stock_prices, to_file,
                        top_transactions)
@@ -33,13 +34,13 @@ def filter_operations_by_date(df: pd.DataFrame, date: str):
 
 
 def main(date):
-    # Чтение файла с данными
-    data = read_file(date)  # Убедитесь, что read_file возвращает правильный объект
+
+    data = read_file(DataFrame)
 
     main_data = {
         "greeting": greeting(),
         "cards": number_cards(data, greeting()),
-        "top_transactions": top_transactions(data),
+        "top_transactions": top_transactions(trans, info),
         "currency_rates": currency(data),
         "stock_prices": stock_prices(data)
     }

@@ -6,3 +6,5 @@ from src.views import main, str_begin_date
 if __name__ == "__main__":
     str_begin_date = "2025-01-01"
     print(main(str_begin_date))
+    print(investment_bank(str_date_service, transactions, 50))
+    print(spending_by_weekday(df_file, str_date_report))
