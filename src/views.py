@@ -35,19 +35,20 @@ def filter_operations_by_date(df: pd.DataFrame, date: str):
 
 def main(date):
 
-    data = read_file(DataFrame)
+    data = read_file(filter_operations_by_date(get_operations(), date))
 
     main_data = {
-        "greeting": greeting(),
+        "greeting": greeting()["greeting"],
         "cards": number_cards(data, greeting()),
         "top_transactions": top_transactions(trans, info),
         "currency_rates": currency(data),
         "stock_prices": stock_prices(data)
     }
 
-    return json.dumps(main_data, indent=4, ensure_ascii=False)
+    return main_data
+
 
 
 if __name__ == "__main__":
-    str_begin_date = "2023-01-01"
+    str_begin_date = "11-11-2021 12:12:12"
     print(main(str_begin_date))

@@ -85,20 +85,20 @@ def greeting():
         print(f"We have a problem with a reading file, Watson: {e}")
 
 
-def number_cards(trans, info):
+def number_cards(trans):
     """Получаем последние 4 цифры номера карты, добавляем в словарь info, возвращаем его же"""
     try:
         logger.info("Get numbers of cards ")
-        info["cards"] = []
+        info = []
         for transaction in trans:
             card_number = transaction.get("Номер карты")
             if card_number is not None:
                 card_number_str = str(card_number)
                 if len(card_number_str) > 1:
                     last_digits = transaction.get("Номер карты")[1:]
-                    if not any(card["last_digits"] == last_digits for card in info["cards"]):
-                        info["cards"].append({"last_digits": last_digits, "total_spent": 0, "cashback": 0})
-                    for card in info["cards"]:
+                    if not any(card["last_digits"] == last_digits for card in info):
+                        info.append({"last_digits": last_digits, "total_spent": 0, "cashback": 0})
+                    for card in info:
                         if card["last_digits"] == last_digits:
                             if "-" in str(transaction["Сумма платежа"]):
                                 amount = str(transaction["Сумма платежа"])[1:]
@@ -118,9 +118,9 @@ def top_transactions(trans, info):
     try:
         logger.info("Oh, you are so rich...")
         top = sorted(trans, key=lambda x: x["Сумма операции"])[:5]
-        info["top_transactions"] = []
+        info = []
         for trans in top:
-            info["top_transactions"].append(
+            info.append(
                 {
                     "date": trans["Дата платежа"],
                     "amount": trans["Сумма операции"],
@@ -134,7 +134,7 @@ def top_transactions(trans, info):
         print(f"We have a problem with top transactions, Watson: {e}")
 
 
-def currency(info):
+def currency():
     """Подключаемся к API, получаем курсы валют, указанные в user_settings.json, добавляем в словарь info"""
     try:
         logger.info("Where do you have so much currency from?")
@@ -148,14 +148,14 @@ def currency(info):
             settings = json.load(f)
             currencies = settings.get("currencies", ["USD", "EUR"])  # По умолчанию USD и EUR
 
-        info["currency_rates"] = []
+        info = []
 
         for currency in currencies:
             url = f"https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base={currency}"
             result = requests.get(url, headers=headers_curr)
             new_amount = result.json()
 
-            info['currency_rates'].append({
+            info["currency_rates": currency()].append({
                 "currency": currency,
                 "rate": new_amount['rates']['RUB']
             })
@@ -166,7 +166,7 @@ def currency(info):
         print(f"We have a problem with currency, Watson: {e}")
 
 
-def stock_prices(info):
+def stock_prices():
     """Подключаемся к API, получаем наименование акции и ее цену, добавляем в словарь info"""
     try:
         logger.info("Good stocks")
@@ -182,10 +182,10 @@ def stock_prices(info):
         response = requests.get(url, headers=headers)
         data_json = response.json()
 
-        info["stock_prices"] = []
+        info = []
 
         for trend in data_json["data"]["trends"]:
-            info["stock_prices"].append({"stock": trend["name"], "price": trend["price"]})
+            info["stock_prices": stock_prices()].append({"stock": trend["name"], "price": trend["price"]})
         return info
     except Exception as e:
         logger.error("Everybody has problems with foreign stocks.")
