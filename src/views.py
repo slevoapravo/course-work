@@ -34,15 +34,16 @@ def filter_operations_by_date(df: pd.DataFrame, date: str):
 
 
 def main(date):
-
     data = read_file(filter_operations_by_date(get_operations(), date))
+
+    transactions = data['transactions']
 
     main_data = {
         "greeting": greeting()["greeting"],
-        "cards": number_cards(data, greeting()),
-        "top_transactions": top_transactions(trans, info),
-        "currency_rates": currency(data),
-        "stock_prices": stock_prices(data)
+        "cards": number_cards(data),
+        "top_transactions": top_transactions(transactions),
+        "currency_rates": currency(),
+        "stock_prices": stock_prices()
     }
 
     return main_data

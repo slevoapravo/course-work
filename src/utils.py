@@ -113,11 +113,12 @@ def number_cards(trans):
         print(f"We have a problem with getting of numbers card, Watson: {e}")
 
 
-def top_transactions(trans, info):
-    """Получаем отсортированные транзакции по убыванию, добавляем в словарь info"""
+def top_transactions(trans):
+    """Получаем отсортированные транзакции по убыванию и формируем список словарей"""
     try:
         logger.info("Oh, you are so rich...")
-        top = sorted(trans, key=lambda x: x["Сумма операции"])[:5]
+        # Сортируем транзакции по убыванию суммы операции и берем топ-5
+        top = sorted(trans, key=lambda x: x["Сумма операции"], reverse=True)[:5]
         info = []
         for trans in top:
             info.append(
@@ -132,6 +133,7 @@ def top_transactions(trans, info):
     except Exception as e:
         logger.error("You poor fuck...")
         print(f"We have a problem with top transactions, Watson: {e}")
+        return []  # Возвращаем пустой список в случае ошибки
 
 
 def currency():
@@ -148,14 +150,15 @@ def currency():
             settings = json.load(f)
             currencies = settings.get("currencies", ["USD", "EUR"])  # По умолчанию USD и EUR
 
-        info = []
+        info = {"currency_rates": []}  # Изменен на словарь для хранения курсов
 
         for currency in currencies:
             url = f"https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base={currency}"
             result = requests.get(url, headers=headers_curr)
             new_amount = result.json()
 
-            info["currency_rates": currency()].append({
+            # Добавляем информацию о курсе валюты в нужный формат
+            info["currency_rates"].append({
                 "currency": currency,
                 "rate": new_amount['rates']['RUB']
             })
