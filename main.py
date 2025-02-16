@@ -1,10 +1,10 @@
 from src.reports import df_file, spending_by_weekday, str_date_report
-from src.services import investment_bank, str_date_service, transactions
+from src.services import investment_bank, str_date_service, load_transactions
 from src.utils import currency, greeting, number_cards, read_file, stock_prices, to_file, top_transactions
 from src.views import main, str_begin_date
 
 if __name__ == "__main__":
     str_begin_date = "11-11-2024 12:11:11"
     print(main(str_begin_date))
-    print(investment_bank(str_date_service, transactions, 50))
+    print(investment_bank(str_date_service, top_transactions, 50))
     print(spending_by_weekday(df_file, str_date_report))

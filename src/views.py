@@ -36,7 +36,7 @@ def filter_operations_by_date(df: pd.DataFrame, date: str):
 def main(date):
     data = read_file(filter_operations_by_date(get_operations(), date))
 
-    transactions = data['transactions']
+    transactions = ['transactions']
 
     main_data = {
         "greeting": greeting()["greeting"],
