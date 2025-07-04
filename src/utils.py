@@ -1,235 +1,203 @@
+import datetime
 import json
-import logging
-
 import os
-from datetime import datetime
-from pathlib import Path
+from typing import Any, Dict, List
 
-from pandas import Timestamp
-
+import pandas as pd
 import requests
+import result
 from dotenv import load_dotenv
+from requests import RequestException
 
-path_to_project = Path(__file__).resolve().parent.parent
-path_to_file = path_to_project / "data" / "operations.xlsx"
+load_dotenv()
 
-logger = logging.getLogger("utils")
-logger.setLevel(logging.DEBUG)
-fileHandler = logging.FileHandler(path_to_project / "logs" / "utils.log", encoding="UTF-8", mode="w")
-fileFormatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s: %(message)s")
-fileHandler.setFormatter(fileFormatter)
-logger.addHandler(fileHandler)
+api_key = os.getenv("API_KEY")
 
 
-def read_file(file):
-    """Читаем DataFrame, возвращаем список словарей"""
-    transactions = []
-    headers = file.columns.tolist()
-    file["Номер карты"] = file["Номер карты"].fillna(False)
+def get_xlsx_data_dict(file_name: str) -> List[Dict]:
+    """Считывает данные о финансовых операциях из excel файла и преобразует их в список словарей"""
     try:
-        logger.info("We have an adequate list of dictionaries")
-        for index, row in file.iterrows():
-            row_data = row.to_dict()
-            if row_data["Номер карты"]:
-                transactions.append(
-                    {
-                        "Дата операции": row_data["Дата операции"],
-                        "Дата платежа": row_data["Дата платежа"],
-                        "Номер карты": row_data["Номер карты"],
-                        "Статус": row_data["Статус"],
-                        "Сумма операции": row_data["Сумма операции"],
-                        "Валюта операции": row_data["Валюта операции"],
-                        "Сумма платежа": row_data["Сумма платежа"],
-                        "Валюта платежа": row_data["Валюта платежа"],
-                        "Кэшбэк": row_data["Кэшбэк"],
-                        "Категория": row_data["Категория"],
-                        "MCC": row_data["MCC"],
-                        "Описание": row_data["Описание"],
-                        "Бонусы (включая кэшбэк)": row_data["Бонусы (включая кэшбэк)"],
-                        "Округление на инвесткопилку": row_data["Округление на инвесткопилку"],
-                        "Сумма операции с округлением": row_data["Сумма операции с округлением"],
-                    }
-                )
-            if len(transactions) == 100:
-                break
-            else:
-                continue
-        return transactions
-    except Exception as e:
-        logger.error("What do you want, bitch?!")
-        print(f"We have a problem with a reading file, Watson: {e}")
+        xlsx_data = pd.read_excel(file_name)
+        data_list = xlsx_data.apply(
+            lambda row: {
+                "operation_date": row["Дата операции"],
+                "payment_date": row["Дата платежа"],
+                "card_number": row["Номер карты"],
+                "status": row["Статус"],
+                "operation_sum": row["Сумма операции"],
+                "operation_cur": row["Валюта операции"],
+                "payment_sum": row["Сумма платежа"],
+                "payment_cur": row["Валюта платежа"],
+                "cashback": row["Кэшбэк"],
+                "category": row["Категория"],
+                "MCC": row["MCC"],
+                "description": row["Описание"],
+                "Bonus": row["Бонусы (включая кэшбэк)"],
+                "Invest_bank": row["Округление на инвесткопилку"],
+                "rounded_operation_sum": row["Сумма операции с округлением"],
+            },
+            axis=1,
+        )
+        new_dict_list = []
+        row_index = 0
+        for row in data_list:
+            new_dict_list.append(data_list[row_index])
+            row_index += 1
+        return new_dict_list
+
+    except Exception:
+        return "File can't be read"
 
 
-def greeting():
-    """Приветствуем пользователя в зависимости от времени суток, возвращаем словарь info с приветствием"""
+def get_greeting(time_data: str) -> str:
+    """Принимает текущее время и возвращает приветствие в зависимости от времени суток"""
+    if 0 <= int(time_data[11:13]) <= 5:
+        return "Доброй ночи"
+    elif 6 <= int(time_data[11:13]) <= 11:
+        return "Доброе утро"
+    elif 12 <= int(time_data[11:13]) <= 17:
+        return "Добрый день"
+    else:
+        return "Добрый вечер"
+
+
+def get_time_data() -> str:
+    """Возвращает текущее время"""
+    time_data = datetime.datetime.now()
+    return str(time_data)
+
+
+time_data = get_time_data()
+greeting = get_greeting(time_data)
+print(time_data)
+
+
+def get_card_number_list(transactions: List[Dict[Any, Any]]) -> list:
+    """Выводит список уникальных номеров карт из списка транзакций"""
+    card_list_full = []
+    for transaction in transactions:
+        if transaction["card_number"]:
+            card_list_full.append(transaction["card_number"])
+    card_list_short = []
+    for card in card_list_full:
+        if card not in card_list_short and type(card) is str:
+            card_list_short.append(card)
+    return card_list_short
+
+
+def get_operations_sum(
+        time_data: str, transactions: List[Dict[str, Any]], card_number: str
+) -> float:
+    """Выводит общую сумму расходов по номеру карты в формате *1234"""
+    month = time_data[5:7] + "." + time_data[:4]
+    transactions_sum_list = []
+    for transaction in transactions:
+        date = str(transaction["payment_date"])
+        if (
+                transaction["card_number"] == card_number
+                and date[3:] == month
+                and transaction["payment_sum"] < 0
+        ):
+            transactions_sum_list.append(transaction["payment_sum"])
+    total_operations_sum = abs(sum(transactions_sum_list))
+    return total_operations_sum
+
+
+transactions = get_xlsx_data_dict('../data/operations.xlsx')
+card_number_list = get_card_number_list(transactions)
+december_date = "2021-12-03"
+card_4556 = get_operations_sum(december_date, transactions, "*4556")
+
+
+def get_cashback_sum(operations_sum: float) -> float:
+    """Высчитывает процент кэшбэка от общей суммы(1%)"""
+    cash_back_sum = round(operations_sum / 100, 2)
+    return cash_back_sum
+
+
+transactions = get_xlsx_data_dict('../data/operations.xlsx')
+december_date = "2021-12-03"
+operations_sum_result = get_operations_sum(december_date, transactions, "*7197")
+print(type(result))
+
+
+def show_cards(time_data: str, transactions: List[Dict[Any, Any]]) -> List[Dict]:
+    """Выводит информацию по каждой карте (последние 4 цифры карты, общая сумма расходов, кэшбэк)"""
+    show_cards_list = []
+    cards_list = get_card_number_list(transactions)
+    for card in cards_list:
+        total_spent = get_operations_sum(time_data, transactions, card)
+        card_dict = {}
+        card_dict["last_digits"] = card[1:]
+        card_dict["total_spent"] = get_operations_sum(time_data, transactions, card)
+        card_dict["cashback"] = get_cashback_sum(total_spent)
+        show_cards_list.append(card_dict)
+    return show_cards_list
+
+
+result = show_cards(december_date, transactions)
+print(result)
+
+
+def show_top_5_transactions(
+        time_data: str, transactions: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """Выводит информацию о 5 топ транзакциях по сумме платежа"""
+    for transaction in transactions:
+        neg_sum = transaction["payment_sum"]
+        transaction["payment_sum"] = abs(neg_sum)
+    month = time_data[5:7] + "." + time_data[:4]
+    month_transactions = []
+    for transaction in transactions:
+        date = str(transaction["payment_date"])
+        if date[3:] == month:
+            month_transactions.append(transaction)
+    sorted_transactions = sorted(
+        month_transactions,
+        key=lambda transaction: transaction["payment_sum"],
+        reverse=True,
+    )
+    list_index = 1
+    top_5_transactions = []
+    for transaction in sorted_transactions:
+        if list_index < 6:
+            top_transaction_dict = {}
+            top_transaction_dict["date"] = transaction["payment_date"]
+            top_transaction_dict["amount"] = transaction["payment_sum"]
+            top_transaction_dict["category"] = transaction["category"]
+            top_transaction_dict["description"] = transaction["description"]
+            top_5_transactions.append(top_transaction_dict)
+            list_index += 1
+    return top_5_transactions
+
+
+
+
+def fetch_and_show_currency_rates() -> List[Dict[str, Any]]:
+    """Выводит курс валют и записывает из в файл .json"""
     try:
-        logger.info("Say 'hello'")
-        date = datetime.now()
-        str_date = date.strftime("%Y-%m-%d %H:%M:%S")
-        hour = str_date[11:13]
-        info = {}
-        if 4 <= int(hour) < 12:
-            info["greeting"] = "Доброе утро"
-            return info
-        elif 12 <= int(hour) < 18:
-            info["greeting"] = "Добрый день"
-            return info
-        elif 18 <= int(hour) < 22:
-            info["greeting"] = "Добрый вечер"
-            return info
-        else:
-            info["greeting"] = "Доброй ночи"
-        return info
-    except Exception as e:
-        logger.error("You can`t say hello, bitch?!")
-        print(f"We have a problem with a reading file, Watson: {e}")
-
-
-def number_cards(trans):
-    """Получаем последние 4 цифры номера карты, добавляем в словарь info, возвращаем его же"""
-    try:
-        logger.info("Get numbers of cards ")
-        info = []
-        for transaction in trans:
-            card_number = transaction.get("Номер карты")
-            if card_number is not None:
-                card_number_str = str(card_number)
-                if len(card_number_str) > 1:
-                    last_digits = transaction.get("Номер карты")[1:]
-                    if not any(card["last_digits"] == last_digits for card in info):
-                        info.append({"last_digits": last_digits, "total_spent": 0, "cashback": 0})
-                    for card in info:
-                        if card["last_digits"] == last_digits:
-                            if "-" in str(transaction["Сумма платежа"]):
-                                amount = str(transaction["Сумма платежа"])[1:]
-                                cash_back = float(amount) / 100
-                            else:
-                                continue
-                            card["total_spent"] += float(amount)
-                            card["cashback"] += cash_back
-        return info
-    except Exception as e:
-        logger.error("Fucking numbers of cards")
-        print(f"We have a problem with getting of numbers card, Watson: {e}")
-
-
-def top_transactions(trans):
-    """Получаем отсортированные транзакции по убыванию и формируем список словарей"""
-    try:
-        logger.info("Oh, you are so rich...")
-        # Сортируем транзакции по убыванию суммы операции и берем топ-5
-        top = sorted(trans, key=lambda x: x["Сумма операции"], reverse=True)[:5]
-        info = []
-        for trans in top:
-            info.append(
-                {
-                    "date": trans["Дата платежа"],
-                    "amount": trans["Сумма операции"],
-                    "category": trans["Категория"],
-                    "description": trans["Описание"],
-                }
-            )
-        return info
-    except Exception as e:
-        logger.error("You poor fuck...")
-        print(f"We have a problem with top transactions, Watson: {e}")
-        return []  # Возвращаем пустой список в случае ошибки
-
-
-def currency():
-    """Подключаемся к API, получаем курсы валют, указанные в user_settings.json, добавляем в словарь info"""
-    try:
-        logger.info("Where do you have so much currency from?")
-        load_dotenv()
-        access_key_curr = os.getenv("access_key_curr")
-
-        headers_curr = {"apikey": access_key_curr}
-
-        # Загрузка валют из user_settings.json
-        with open('user_settings.json', 'r') as f:
-            settings = json.load(f)
-            currencies = settings.get("currencies", ["USD", "EUR"])  # По умолчанию USD и EUR
-
-        info = {"currency_rates": []}  # Изменен на словарь для хранения курсов
-
-        for currency in currencies:
-            url = f"https://api.apilayer.com/exchangerates_data/latest?symbols=RUB&base={currency}"
-            result = requests.get(url, headers=headers_curr)
-            new_amount = result.json()
-
-            # Добавляем информацию о курсе валюты в нужный формат
-            info["currency_rates"].append({
-                "currency": currency,
-                "rate": new_amount['rates']['RUB']
-            })
-
-        return info
-    except Exception as e:
-        logger.error("Everybody has problems with currency now...")
-        print(f"We have a problem with currency, Watson: {e}")
-
-
-def stock_prices():
-    """Подключаемся к API, получаем наименование акции и ее цену, добавляем в словарь info"""
-    try:
-        logger.info("Good stocks")
-        load_dotenv()
-        access_key_stock = os.getenv("access_key_stock")
-
-        url = "https://real-time-finance-data.p.rapidapi.com/market-trends?trend_type=MARKET_INDEXES&country=us&language=en"
-        headers = {
-            "x-rapidapi-key": access_key_stock,
-            "x-rapidapi-host": "real-time-finance-data.p.rapidapi.com",
-        }
-
+        url = "https://www.cbr-xml-daily.ru/daily_json.js"
+        payload = {}
+        headers = {"apikey": api_key}
         response = requests.get(url, headers=headers)
-        data_json = response.json()
+        print(response)
+        result = response.json()
+        print(result)
+        exchange_rates_list = []
+        usd_rate = {"currency": "USD", "rate": round(result['Valute']['USD']['Value'], 2)}
+        eur_rate = {"currency": "EUR", "rate": round(result['Valute']['EUR']['Value'], 2)}
+        exchange_rates_list.append(usd_rate)
+        exchange_rates_list.append(eur_rate)
+        with open("user_settings.json", "w") as f:
+            json.dump(exchange_rates_list, f)
+        return exchange_rates_list
+    except RequestException:
+        return [{}]
 
-        info = []
 
-        for trend in data_json["data"]["trends"]:
-            info["stock_prices": stock_prices()].append({"stock": trend["name"], "price": trend["price"]})
-        return info
-    except Exception as e:
-        logger.error("Everybody has problems with foreign stocks.")
-        print(f"We have a problem with stocks, Watson: {e}")
+exchange_rates = fetch_and_show_currency_rates()
+print(exchange_rates)
 
 
-def to_file(info):
-    """Записываем словарь info в json файл, возвращаем словарь info в PYTHON виде"""
-    try:
-        logger.info("Write to file")
-        if info is None:
-            logger.error("Info is None")
-            return
-
-        info_to_file = {}
-        info_to_file["user_currencies"] = []
-        info_to_file["user_stocks"] = []
-
-        if "currency_rates" in info:
-            for currency_info in info["currency_rates"]:
-                info_to_file["user_currencies"].append(currency_info["currency"])
-
-        if "stock_prices" in info:
-            for stock_info in info["stock_prices"]:
-                info_to_file["user_stocks"].append(stock_info["stock"])
-
-        path_to_project = Path(__file__).resolve().parent.parent
-        path_to_file = path_to_project / "user_settings.json"
-        with open(path_to_file, "w", encoding="UTF-8") as f:
-            json.dump(info_to_file, f, ensure_ascii=False)
-
-        for key, value in info.items():
-            if isinstance(value, list):
-                for item in value:
-                    for k, v in item.items():
-                        if isinstance(v, Timestamp):
-                            item[k] = v.isoformat()
-
-        json_info = json.dumps(info, ensure_ascii=False)
-
-        return json_info
-    except Exception as e:
-        logger.error("Problems with recording to file.")
-        print(f"We have a problem with recording to file, Watson: {e}")
+def fetch_and_show_stock_prices() -> List[Dict[str, Any]]:
+    pass

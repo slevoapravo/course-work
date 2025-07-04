@@ -1,97 +1,83 @@
+import datetime
 import json
 import logging
-from datetime import datetime
-
+from datetime import timedelta
+from typing import Any, Callable
 import pandas as pd
-from black.trans import defaultdict
-from dateutil.relativedelta import relativedelta
-
-from src.services import path_to_project
-
-path_to_file = path_to_project / "data" / "operations.xlsx"
-df_file = pd.read_excel(path_to_file)
-path_to_json = path_to_project / "data" / "spending_by_weekday.json"
-path_to_json_2 = path_to_project / "data" / "spending_by_weekday_2.json"
-
-logger = logging.getLogger("reports")
-logger.setLevel(logging.DEBUG)
-fileHandler = logging.FileHandler(path_to_project / "logs" / "reports.log", encoding="UTF-8", mode="w")
-fileFormatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s: %(message)s")
-fileHandler.setFormatter(fileFormatter)
-logger.addHandler(fileHandler)
 
 
-date_obj = datetime(2021, 5, 6)
-str_date_report = datetime.strftime(date_obj, "%d.%m.%Y")
+logger = logging.getLogger("report.log")
+file_handler = logging.FileHandler("report.log", "w")
+file_formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s")
+file_handler.setFormatter(file_formatter)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
 
 
-def my_decorator(func):
-    def wrapper(*args, **kwargs):
-        try:
-            logger.info("Записываем данные в файл 'spending_by_weekday.json'")
-            result = func(*args, **kwargs)
-            with open(path_to_json, "w", encoding="utf-8") as file:
-                json.dump(result, file)
-            return result
-        except Exception as e:
-            print(f"Не получилось записать информацию в файл 'spending_by_weekday.json': {e}")
-            logger.error(f"Не получилось записать информацию в файл 'spending_by_weekday.json': {e}")
+def decorator_spending_by_cat(func: Callable) -> Callable:
+    """Логирует результат функции в файл по умолчанию spending_by_cat.json"""
+
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        result = func(*args, **kwargs).to_dict("records")
+        with open("spending_by_cat.json", "w", encoding="utf-8") as f:
+            json.dump(result, f, ensure_ascii=False, indent=4)
+        return result
 
     return wrapper
 
 
-def decorator_with_args(file):
-    def my_big_decorator(func):
-        def wrapper(*args, **kwargs):
-            try:
-                logger.info("Записываем данные в файл 'spending_by_weekday_2.json'")
-                result = func(*args, **kwargs)
-                with open(file, "w", encoding="utf-8") as file_2:
-                    json.dump(result, file_2)
-                return result
-            except Exception as e:
-                print(f"Не получилось записать информацию в файл 'spending_by_weekday_2.json': {e}")
-                logger.error(f"Не получилось записать информацию в файл 'spending_by_weekday_2.json': {e}")
+def log_spending_by_cat(filename: Any) -> Callable:
+    """Логирует результат функции в указанный файл"""
 
+    def decorator(func: Callable) -> Callable:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            result = func(*args, **kwargs).to_dict("records")
+            with open(filename, "w") as f:
+                json.dump(result, f, indent=4)
+            return result
         return wrapper
-
-    return my_big_decorator
-
-
-@decorator_with_args(path_to_json_2)
-def spending_by_weekday(file, date="14.10.2022"):
-    """Функция возвращает средние траты в каждый из дней недели за последние три месяца (от переданной даты)"""
-    try:
-        logger.info("Получаем информацию из reports.")
-        transactions = []
-        to_date = datetime.strptime(date, "%d.%m.%Y")
-        from_date = to_date - relativedelta(months=3)
-
-        for index, row in file.iterrows():
-            date_payment = row["Дата платежа"]
-            amount = row["Сумма платежа"]
-            if isinstance(date_payment, str) and isinstance(amount, (float, int)) and amount < 0:
-                date_payment = datetime.strptime(date_payment, "%d.%m.%Y")
-                if from_date <= date_payment <= to_date:
-                    weekday = date_payment.strftime("%A")
-                    transactions.append({weekday: amount})
-
-        spending_per_day = defaultdict(list)
-        for trans in transactions:
-            for key, value in trans.items():
-                spending_per_day[key].append(value)
-
-        spending_per_day = dict(spending_per_day)
-        averages = {}
-        for key, values in spending_per_day.items():
-            avg = sum(values) / len(values)
-            averages[key] = round(avg, 2)
-        average_json = json.dumps(averages)
-        return average_json
-    except Exception as e:
-        print(f"Ошибка с reports: {e}")
-        logger.error(f"Ошибка с reports: {e}")
+    return decorator
 
 
-if __name__ == "__main__":
-    print(spending_by_weekday(df_file, str_date_report))
+def filtering_by_date(operations_df: pd.DataFrame, date: str) -> pd.DataFrame:
+    """Возвращает DataFrame за 3 месяца от указанной даты"""
+    logger.info("Converting DF to dictionary")
+    operations = operations_df.to_dict("records")
+    filtered_operations = []
+    logger.info("Creating period for 90 days")
+    current_date = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+    end_date = current_date - timedelta(days=90)
+    logger.info("Filtering operations within 3 months period")
+    for operation in operations:
+        payment_date = datetime.datetime.strptime(
+            str(operation["Дата операции"]), "%d.%m.%Y %H:%M:%S"
+        )
+        if end_date < payment_date < current_date:
+            filtered_operations.append(operation)
+    logger.info("Converting data back to DF")
+    filtered_operations_df = pd.DataFrame(filtered_operations)
+    logger.info("Returning DF to main function")
+    return filtered_operations_df
+
+
+@decorator_spending_by_cat
+def spending_by_category(transactions: pd.DataFrame, category: str, date: str) -> pd.DataFrame:
+    """Возвращает DataFrame по заданной категории за 3 месяца от указанной даты"""
+    logger.info("Start")
+    logger.info(
+        "Creating filtered list by date for last 3 months with another function"
+    )
+    transactions_filtered_by_3_months = filtering_by_date(transactions, date)
+    logger.info("Filtering transactions by category")
+    if transactions_filtered_by_3_months.empty:
+        return pd.DataFrame()  # Возвращаем пустой DataFrame, если нет транзакций
+    category_transcations = transactions_filtered_by_3_months[
+        transactions_filtered_by_3_months["Категория"] == category]
+    logger.info("Returning filtered DF")
+    logger.info("Stop")
+    return category_transcations
+
+
+transcations_df = pd.read_excel("../data/operations_2.xlsx")
+result = spending_by_category(transcations_df, "Каршеринг", "2021-12-31 15:45:34")
+print(result)
