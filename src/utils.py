@@ -5,7 +5,6 @@ from typing import Any, Dict, List
 
 import pandas as pd
 import requests
-import result
 from dotenv import load_dotenv
 from requests import RequestException
 
@@ -115,10 +114,10 @@ def get_cashback_sum(operations_sum: float) -> float:
     return cash_back_sum
 
 
-transactions = get_xlsx_data_dict('../data/operations.xlsx')
-december_date = "2021-12-03"
-operations_sum_result = get_operations_sum(december_date, transactions, "*7197")
-print(type(result))
+#transactions = get_xlsx_data_dict('../data/operations.xlsx')
+#december_date = "2021-12-03"
+#operations_sum_result = get_operations_sum(december_date, transactions, "*7197")
+#print(type(result))
 
 
 def show_cards(time_data: str, transactions: List[Dict[Any, Any]]) -> List[Dict]:
