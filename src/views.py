@@ -17,7 +17,7 @@ def main_page(date: str) -> Dict:
     """Записывает информацию для Главной страницы в файл json"""
     logger.info("Start")
     logger.info("Converting Excel file to list of dictionaries")
-    transactions = get_xlsx_data_dict("../data/operations.xlsx")
+    transactions = get_xlsx_data_dict("data/operations.xlsx")
     logger.info("Getting greeting")
     greeting = get_greeting(date)
     logger.info("Getting card info")
@@ -33,6 +33,6 @@ def main_page(date: str) -> Dict:
     main_dict["top_transcations"] = top_transcations
     main_dict["currency_rates"] = currency_rates
     logger.info("Writing info into json-file")
-    main_dict_jsons = json.dumps(main_dict)
+    main_dict_jsons = json.dumps(main_dict, ensure_ascii=False, indent=4)
     logger.info("Stop")
     return main_dict_jsons

@@ -77,7 +77,3 @@ def spending_by_category(transactions: pd.DataFrame, category: str, date: str) -
     logger.info("Stop")
     return category_transcations
 
-
-transcations_df = pd.read_excel("../data/operations_2.xlsx")
-result = spending_by_category(transcations_df, "Каршеринг", "2021-12-31 15:45:34")
-print(result)

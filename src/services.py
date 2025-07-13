@@ -42,6 +42,3 @@ def investment_bank(month: str, transactions: List[Dict[str, Any]], limit: int) 
     logger.info("Stop")
     return result_list_jsons
 
-transactions = get_xlsx_data_dict("../data/operations.xlsx")
-result = investment_bank("2021-12", transactions, 50)
-print(result)
