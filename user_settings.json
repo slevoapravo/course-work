@@ -1,1 +1,1 @@
-{"user_currencies": ["USD", "EUR"], "user_stocks": ["S&P 500", "Dow Jones", "NASDAQ"]}
+[{"currency": "USD", "rate": 77.89}, {"currency": "EUR", "rate": 91.12}]
